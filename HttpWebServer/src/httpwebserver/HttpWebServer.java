@@ -4,7 +4,8 @@
  * and open the template in the editor.
  */
 package httpwebserver;
-
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
 import java.io.File;
@@ -202,9 +203,36 @@ public class HttpWebServer implements Runnable
 	}
 	
 	private void fileNotFound(PrintWriter out, OutputStream dataOut, String fileRequested) throws IOException {
-		if (!(fileRequested.endsWith(".html") && !(fileRequested.endsWith("/")))) // Se non finisce con .html o con /
+                if (!(fileRequested.endsWith("/punti-vendita.xml")))  //file JSON e XML
                 {
-                   File file = new File(WEB_ROOT, FILE_MOVED);
+                    ObjectMapper mapper = new ObjectMapper();
+                    puntivendita p = mapper.readValue(new File("puntiVendita.json"), puntiVendita.class);
+                    XmlMapper xmlMapper = new XmlMapper();
+                    xmlMapper.writeValue(new File("puntiVendita.xml"), p);
+                    File fileinxml = new File("puntiVendita.xml");
+                    File file = new File(WEB_ROOT, FILE_MOVED);
+		    int fileLength = (int) file.length();
+                    String content = "text/html";
+                    byte[] fileData = readFileData(file, fileLength);
+		
+                    out.println("HTTP/1.1 200 OK");
+                    out.println("Location: " + fileRequested);
+                    out.println("Server: Java HTTP Server from SSaurel : 1.0");
+                    out.println("Date: " + new Date());
+                    out.println("Content-type: " + content);
+                    out.println("Content-length: " + fileLength);
+                    out.println(); // blank line between headers and content, very important !
+                    out.flush(); // flush character output stream buffer
+		
+                    dataOut.write(fileData, 0, fileLength);
+                    dataOut.flush();
+		
+                    if (verbose) {
+			System.out.println("File " + fileRequested + " not found");
+                    }
+		if (!(fileRequested.endsWith(".html") && !(fileRequested.endsWith("/"))))
+                {
+                File file = new File(WEB_ROOT, FILE_MOVED);
 		int fileLength = (int) file.length();
 		String content = "text/html";
 		byte[] fileData = readFileData(file, fileLength);
@@ -222,12 +250,12 @@ public class HttpWebServer implements Runnable
 		dataOut.flush();
 		
 		if (verbose) {
-			System.out.println("File " + fileRequested + " not found");
+                    System.out.println("File " + fileRequested + " not found");
 		}
                 }
                 else
                 {
-                        File file = new File(WEB_ROOT, FILE_NOT_FOUND);
+                File file = new File(WEB_ROOT, FILE_NOT_FOUND);
 		int fileLength = (int) file.length();
 		String content = "text/html";
 		byte[] fileData = readFileData(file, fileLength);
